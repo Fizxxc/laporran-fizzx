@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Keuangan</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h2>Laporan Keuangan</h2>
+    <label for="tipe">Tipe:</label>
+    <select id="tipe">
+        <option value="pemasukan">Pemasukan</option>
+        <option value="pengeluaran">Pengeluaran</option>
+    </select>
+    <input type="number" id="jumlah" placeholder="Masukkan jumlah">
+    <input type="text" id="deskripsi" placeholder="Masukkan deskripsi">
+    <button onclick="tambahData()">Tambah</button>
+    <button onclick="kirimKeTelegram()">Kirim ke Telegram</button>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Tanggal & Waktu</th>
+                <th>Tipe</th>
+                <th>Jumlah</th>
+                <th>Deskripsi</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="tabel-body"></tbody>
+    </table>
+    
+    <canvas id="chartKeuangan" width="400" height="200"></canvas>
+    
+    <script>
+        let dataKeuangan = [];
+
+        function tambahData() {
+            let tipe = document.getElementById("tipe").value;
+            let jumlah = document.getElementById("jumlah").value;
+            let deskripsi = document.getElementById("deskripsi").value;
+            let tanggal = new Date().toLocaleString();
+            
+            if (jumlah === "" || deskripsi === "") {
+                alert("Masukkan jumlah dan deskripsi!");
+                return;
+            }
+            
+            dataKeuangan.push({ tanggal, tipe, jumlah: parseFloat(jumlah), deskripsi });
+            renderTable();
+            updateChart();
+        }
+
+        function hapusData(index) {
+            dataKeuangan.splice(index, 1);
+            renderTable();
+            updateChart();
+        }
+
+        function renderTable() {
+            let tbody = document.getElementById("tabel-body");
+            tbody.innerHTML = "";
+            dataKeuangan.forEach((item, index) => {
+                let row = `<tr>
+                    <td>${item.tanggal}</td>
+                    <td>${item.tipe}</td>
+                    <td>${item.jumlah}</td>
+                    <td>${item.deskripsi}</td>
+                    <td><button onclick="hapusData(${index})">Hapus</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function updateChart() {
+            let pemasukan = dataKeuangan.filter(item => item.tipe === "pemasukan").reduce((sum, item) => sum + item.jumlah, 0);
+            let pengeluaran = dataKeuangan.filter(item => item.tipe === "pengeluaran").reduce((sum, item) => sum + item.jumlah, 0);
+            
+            chart.data.datasets[0].data = [pemasukan, pengeluaran];
+            chart.update();
+        }
+
+        function kirimKeTelegram() {
+            let laporan = dataKeuangan.map(item => `📅 ${item.tanggal}\n💰 ${item.tipe}: ${item.jumlah}\n📜 Deskripsi: ${item.deskripsi}`).join("\n\n");
+            let botToken = "7804694472:AAEMFQl93uRGITzkKpPNqXxD03wrz0gXAXg";
+            let chatId = "6450551010";
+            let url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(laporan)}`;
+            
+            fetch(url)
+                .then(response => alert("Laporan dikirim ke Telegram!"))
+                .catch(error => alert("Gagal mengirim laporan!"));
+        }
+
+        let ctx = document.getElementById("chartKeuangan").getContext("2d");
+        let chart = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: ["Pemasukan", "Pengeluaran"],
+                datasets: [{
+                    label: "Keuangan",
+                    data: [0, 0],
+                    backgroundColor: ["green", "red"]
+                }]
+            }
+        });
+    </script>
+</body>
+</html>
